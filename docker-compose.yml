@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.backend
+    container_name: fastapi-backend
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+    depends_on:
+      db:
+        condition: service_healthy # 'db' 서비스가 healthy 상태가 될 때까지 기다림
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:1234@db:3306/sjw2?charset=utf8mb4
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/front/Dockerfile.frontend
+    container_name: react-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  db:
+    image: mysql:8
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234   # root 비밀번호만 설정
+      MYSQL_DATABASE: sjw2        # 생성할 DB 이름
+    ports:
+      - "3307:3306"               
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s   # 5초마다
+      timeout: 10s   # 10초 대기
+      retries: 10    # 10번 재시도
+
+networks:
+  app-network:
+    driver: bridge

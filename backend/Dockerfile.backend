@@ -1,0 +1,20 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# 로컬의 backend 폴더 전체를 /app/backend에 복사
+COPY ./backend ./backend
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    gcc g++ libgl1 libglib2.0-0 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip
+
+RUN pip install --no-cache-dir --prefer-binary \
+    fastapi uvicorn sqlalchemy pymysql pillow python-multipart requests cryptography
+
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
